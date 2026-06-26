@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collatz Conjecture — Varshika Jain</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; padding: 28px 20px; }
+.wrap { max-width: 720px; margin: 0 auto; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 99px; background: #E1F5EE; color: #085041; font-weight: 500; margin-left: 8px; vertical-align: middle; }
+h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; color: #1a1a1a; }
+.subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+.input-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+.input-row input[type=number] { font-size: 20px; font-weight: 500; padding: 10px 14px; border-radius: 10px; border: 0.5px solid #d0cdc5; background: #fff; width: 160px; color: #1a1a1a; font-family: inherit; outline: none; }
+.input-row input:focus { border-color: #0F6E56; box-shadow: 0 0 0 3px #E1F5EE; }
+.go-btn { font-size: 14px; padding: 10px 22px; border-radius: 10px; border: none; background: #4A5C30; color: #fff; cursor: pointer; font-family: inherit; font-weight: 500; transition: background 0.15s; }
+.go-btn:hover { background: #3a4a24; }
+.random-btn { font-size: 13px; padding: 10px 16px; border-radius: 10px; border: 0.5px solid #d0cdc5; background: #fff; color: #555; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.random-btn:hover { background: #f0ede8; }
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.card { background: #fff; border: 0.5px solid #e0ddd5; border-radius: 12px; padding: 14px; text-align: center; }
+.card .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.card .val { font-size: 20px; font-weight: 500; color: #1a1a1a; }
+.chart-wrap { background: #fff; border: 0.5px solid #e0ddd5; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.chart-title { font-size: 13px; font-weight: 500; color: #555; margin-bottom: 12px; }
+canvas { width: 100%; display: block; border-radius: 6px; }
+.sequence-wrap { background: #fff; border: 0.5px solid #e0ddd5; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+.sequence-title { font-size: 13px; font-weight: 500; color: #555; margin-bottom: 10px; }
+.seq-tokens { display: flex; flex-wrap: wrap; gap: 5px; }
+.tok { font-size: 12px; padding: 3px 9px; border-radius: 6px; font-family: monospace; }
+.tok.even { background: #E1F5EE; color: #085041; }
+.tok.odd  { background: #EEEDFE; color: #3C3489; }
+.tok.one  { background: #4A5C30; color: #fff; font-weight: 600; }
+.tok.more { background: #f0ede8; color: #888; font-size: 11px; }
+.rule-box { background: #FAEEDA; border: 0.5px solid #FAC775; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+.rule-box p { font-size: 14px; color: #412402; line-height: 1.7; }
+.rule-highlight { display: inline-block; font-family: monospace; font-size: 13px; background: #fff; border-radius: 6px; padding: 2px 8px; border: 0.5px solid #FAC775; color: #633806; }
+.unsolved-box { background: #EEEDFE; border: 0.5px solid #AFA9EC; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+.unsolved-box p { font-size: 14px; color: #26215C; line-height: 1.7; }
+.compare-wrap { background: #fff; border: 0.5px solid #e0ddd5; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+.compare-title { font-size: 13px; font-weight: 500; color: #555; margin-bottom: 10px; }
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+.compare-item { text-align: center; padding: 8px 4px; border-radius: 8px; border: 0.5px solid #e0ddd5; cursor: pointer; transition: all 0.15s; }
+.compare-item:hover { border-color: #0F6E56; background: #E1F5EE; }
+.compare-item.active { border-color: #0F6E56; background: #E1F5EE; }
+.compare-item .ci-n { font-size: 16px; font-weight: 500; color: #1a1a1a; }
+.compare-item .ci-s { font-size: 11px; color: #888; }
+.footer { font-size: 12px; color: #bbb; text-align: center; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Interactive Collatz Conjecture explorer showing the sequence of steps for any starting number until it reaches 1</h2>
+
+  <h1>The Collatz Conjecture <span class="badge">Portfolio Project</span></h1>
+  <p class="subtitle">Pick any number. Follow the rule. It always reaches 1 — but nobody has ever proved why.</p>
+
+  <div class="rule-box">
+    <p>The rule is beautifully simple. If your number is <span class="rule-highlight">even</span> divide it by 2. If it is <span class="rule-highlight">odd</span> multiply by 3 and add 1. Repeat until you reach 1. Every number ever tried eventually gets there — but mathematicians have never been able to prove this will always happen for every possible number.</p>
+  </div>
+
+  <div class="input-row">
+    <input type="number" id="n-input" value="27" min="1" max="999999" placeholder="Enter a number">
+    <button class="go-btn" onclick="run()">Explore</button>
+    <button class="random-btn" onclick="runRandom()">Random number</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="lbl">Starting number</div><div class="val" id="c-start" style="color:#534AB7">27</div></div>
+    <div class="card"><div class="lbl">Steps to reach 1</div><div class="val" id="c-steps" style="color:#0F6E56">111</div></div>
+    <div class="card"><div class="lbl">Highest peak</div><div class="val" id="c-peak" style="color:#993C1D">9232</div></div>
+    <div class="card"><div class="lbl">Even / Odd steps</div><div class="val" id="c-eo" style="color:#854F0B">-</div></div>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="chart-title">Journey of the sequence — every step plotted</div>
+    <canvas id="chart" height="220" role="img" aria-label="Line chart showing the Collatz sequence journey for the chosen number"></canvas>
+  </div>
+
+  <div class="sequence-wrap">
+    <div class="sequence-title">The sequence step by step <span style="font-size:11px;color:#aaa;font-weight:400">green = even (÷2), purple = odd (×3+1), dark = final 1</span></div>
+    <div class="seq-tokens" id="seq-tokens"></div>
+  </div>
+
+  <div class="compare-wrap">
+    <div class="compare-title">Compare starting numbers — click any to explore</div>
+    <div class="compare-grid" id="compare-grid"></div>
+  </div>
+
+  <div class="unsolved-box">
+    <p>The Collatz Conjecture has been checked for every number up to about 2<sup>68</sup> — roughly 295 quintillion — and it holds every single time. Yet no mathematician has ever been able to prove it must always work. It sits in a category of problems that are trivially easy to state and devastatingly hard to prove. Paul Erdős, one of the greatest mathematicians of the 20th century, said about it: "Mathematics is not yet ready for such problems."</p>
+  </div>
+
+  <div class="footer">Collatz Conjecture Explorer · Varshika Jain · BS Data Science, IIT Madras · CCL Portfolio</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let chart = null;
+
+function collatz(n) {
+  const seq = [n];
+  while (n !== 1) {
+    n = n % 2 === 0 ? n / 2 : 3 * n + 1;
+    seq.push(n);
+  }
+  return seq;
+}
+
+function run(val) {
+  const input = document.getElementById('n-input');
+  const n = val !== undefined ? val : parseInt(input.value);
+  if (!n || n < 1) return;
+  if (val !== undefined) input.value = n;
+
+  const seq = collatz(n);
+  const steps = seq.length - 1;
+  const peak = Math.max(...seq);
+  const evens = seq.filter((v,i) => i < seq.length-1 && v % 2 === 0).length;
+  const odds  = seq.filter((v,i) => i < seq.length-1 && v % 2 !== 0).length;
+
+  document.getElementById('c-start').textContent = n.toLocaleString();
+  document.getElementById('c-steps').textContent = steps;
+  document.getElementById('c-peak').textContent = peak.toLocaleString();
+  document.getElementById('c-eo').textContent = evens + ' / ' + odds;
+
+  drawChart(seq);
+  drawTokens(seq);
+  buildCompare(n);
+}
+
+function drawChart(seq) {
+  const canvas = document.getElementById('chart');
+  if (chart) { chart.destroy(); }
+
+  const labels = seq.map((_, i) => i);
+  const data   = seq;
+
+  const maxVal = Math.max(...data);
+  const peak_i = data.indexOf(maxVal);
+
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Value',
+        data,
+        borderColor: '#0F6E56',
+        borderWidth: 1.5,
+        pointRadius: seq.length > 80 ? 0 : 2,
+        pointBackgroundColor: data.map(v => v % 2 === 0 ? '#0F6E56' : '#534AB7'),
+        fill: true,
+        backgroundColor: 'rgba(15,110,86,0.07)',
+        tension: 0.2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => 'Step ' + ctx[0].label,
+            label: ctx => 'Value: ' + ctx.raw.toLocaleString() + (ctx.raw % 2 === 0 ? ' (even → ÷2)' : ctx.raw === 1 ? ' (done!)' : ' (odd → ×3+1)')
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 10, color: '#aaa', font: { size: 11 } }, grid: { color: '#f0ede8' } },
+        y: { ticks: { color: '#aaa', font: { size: 11 }, callback: v => v.toLocaleString() }, grid: { color: '#f0ede8' } }
+      }
+    }
+  });
+}
+
+function drawTokens(seq) {
+  const container = document.getElementById('seq-tokens');
+  container.innerHTML = '';
+  const show = seq.length > 40 ? seq.slice(0,35) : seq;
+  show.forEach((v, i) => {
+    const tok = document.createElement('span');
+    tok.textContent = v.toLocaleString();
+    if (v === 1 && i === seq.length - 1) tok.className = 'tok one';
+    else if (v % 2 === 0) tok.className = 'tok even';
+    else tok.className = 'tok odd';
+    container.appendChild(tok);
+  });
+  if (seq.length > 40) {
+    const more = document.createElement('span');
+    more.className = 'tok more';
+    more.textContent = '… ' + (seq.length - 35) + ' more steps → 1';
+    container.appendChild(more);
+  }
+}
+
+function buildCompare(active) {
+  const nums = [3,6,7,9,11,17,27,31,41,54,97,100,231,256,871];
+  const grid = document.getElementById('compare-grid');
+  grid.innerHTML = '';
+  nums.forEach(n => {
+    const steps = collatz(n).length - 1;
+    const el = document.createElement('div');
+    el.className = 'compare-item' + (n === active ? ' active' : '');
+    el.innerHTML = `<div class="ci-n">${n}</div><div class="ci-s">${steps} steps</div>`;
+    el.onclick = () => run(n);
+    grid.appendChild(el);
+  });
+}
+
+function runRandom() {
+  const n = Math.floor(Math.random() * 9998) + 2;
+  document.getElementById('n-input').value = n;
+  run(n);
+}
+
+document.getElementById('n-input').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+run(27);
+</script>
+</body>
+</html>
